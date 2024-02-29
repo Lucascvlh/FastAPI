@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+
+<body>
+    <h1>Login</h1>
+    <form id="loginForm">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username"><br><br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password"><br><br>
+        <button type="submit">Login</button>
+    </form>
+    <h1 id="homeMessage" style="display:none;">Você está na tela home</h1>
+    <button id="registerUser" style="display: none;">Registrar usuário</button>
+    <button id="logoutButton" style="display:none;">Sair</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const token = localStorage.getItem('token');
+            if (token) {
+                showHomePage(token);
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async function (event) {
+            event.preventDefault(); // Impede o envio do formulário padrão
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await axios.post('http://localhost:3000/autentication', { username, password });
+                const token = response.data.access_token;
+                localStorage.setItem('token', token);
+                showHomePage(token);
+            } catch (error) {
+                alert('Usuário ou senha inválido!')
+                console.error('Erro:', error.message);
+            }
+        });
+        
+        document.getElementById('logoutButton').addEventListener('click', function () {
+            localStorage.removeItem('token');
+            window.location.reload(); // Recarrega a página para voltar ao estado de login
+        });
+
+        function showHomePage(token) {
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            };
+
+            const protectedUrl = 'http://localhost:3000/home';
+            axios.get(protectedUrl, config)
+                .then(response => {
+                    document.getElementById('homeMessage').style.display = 'block';
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('logoutButton').style.display = 'block'; // Mostra o botão de logout
+                })
+                .catch(error => {
+                    console.error('Erro ao acessar a rota protegida:', error.response.data);
+                    localStorage.removeItem('token'); // Remove o token se a solicitação falhar
+                });
+        }
+    </script>
+</body>
+
+</html>
